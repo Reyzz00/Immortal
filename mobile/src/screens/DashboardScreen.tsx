@@ -1,4 +1,5 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
@@ -14,7 +15,9 @@ import { CoachPlanSections } from "@/components/CoachPlanSections";
 import { CoachPriorityCard } from "@/components/CoachPriorityCard";
 import { HealthSyncCard } from "@/components/HealthSyncCard";
 import { ScoreRing } from "@/components/ScoreRing";
-import { palette, radii, spacing } from "@/theme";
+import { AccountModal } from "@/screens/AccountScreen";
+import { useAuthStore } from "@/state/authStore";
+import { layout, palette, radii, shadow, spacing } from "@/theme";
 
 const readinessLabel = (score: number) => {
   if (score >= 75) return "Primed";
@@ -37,6 +40,11 @@ export function DashboardScreen() {
   const { data: coachStatus } = useCoachStatus();
   const coachEnabled = coachStatus?.configured ?? false;
   const coach = useCoachPlan(coachEnabled);
+  const profile = useAuthStore((s) => s.profile);
+  const user = useAuthStore((s) => s.user);
+  const sources = useAuthStore((s) => s.sources);
+  const connectedCount = Object.values(sources).filter((s) => s.connected).length;
+  const [accountOpen, setAccountOpen] = useState(false);
 
   if (isLoading) {
     return <Loading text="Crunching today's state…" />;
@@ -54,7 +62,29 @@ export function DashboardScreen() {
 
   return (
     <SafeAreaView edges={["top"]} style={styles.safe}>
+      <AccountModal visible={accountOpen} onClose={() => setAccountOpen(false)} />
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        <Pressable onPress={() => setAccountOpen(true)} style={styles.accountRow}>
+          <View style={styles.avatarRing}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {(profile.firstName?.[0] ?? user?.email?.[0] ?? "·").toUpperCase()}
+              </Text>
+            </View>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.greeting}>
+              Welcome back{profile.firstName ? `, ${profile.firstName}` : ""}
+            </Text>
+            <Text style={styles.greetingSub}>
+              {connectedCount} source{connectedCount === 1 ? "" : "s"} connected
+            </Text>
+          </View>
+          <View style={styles.accountChevron}>
+            <Text style={styles.accountChevronGlyph}>›</Text>
+          </View>
+        </Pressable>
+
         <View style={styles.pageHeader}>
           <Text style={styles.kicker}>TODAY · {state.date}</Text>
           <Text style={styles.pageTitle}>Today's plan</Text>
@@ -68,7 +98,7 @@ export function DashboardScreen() {
             <Text style={styles.recKicker}>EVIDENCE-BASED COACH</Text>
             <Text style={styles.recMsg}>Generating today's plan…</Text>
             <Text style={styles.recReason}>
-              Claude is cross-referencing your data against 30+ peer-reviewed studies.
+              Cross-referencing your data against 30+ peer-reviewed studies.
             </Text>
           </Card>
         ) : top ? (
@@ -299,7 +329,49 @@ function Loading({ text }: { text: string }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.xl },
-  container: { padding: spacing.l, gap: spacing.m, paddingBottom: spacing.xxl * 2 },
+  container: { padding: spacing.l, gap: spacing.m, paddingBottom: layout.tabBarBottomSpace },
+
+  accountRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.m,
+    backgroundColor: palette.surface,
+    borderRadius: radii.pill,
+    padding: 6,
+    paddingRight: spacing.m,
+    ...shadow.card,
+  },
+  avatarRing: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    padding: 2,
+    backgroundColor: palette.surfaceAlt,
+  },
+  avatar: {
+    flex: 1,
+    borderRadius: 20,
+    backgroundColor: palette.peachSoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: { color: palette.accentDeep, fontSize: 16, fontWeight: "900" },
+  greeting: { color: palette.text, fontSize: 14, fontWeight: "800" },
+  greetingSub: { color: palette.textMuted, fontSize: 11, marginTop: 1 },
+  accountChevron: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: palette.surfaceAlt,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  accountChevronGlyph: {
+    color: palette.text,
+    fontSize: 18,
+    fontWeight: "900",
+    marginTop: -2,
+  },
 
   pageHeader: {
     marginTop: spacing.s,

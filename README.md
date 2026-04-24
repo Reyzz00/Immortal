@@ -83,9 +83,14 @@ GET  /trends/{metric}?days=30     # hrv | sleep_hours | resting_hr | readiness |
 
 ## MVP → V3 roadmap
 
-* **MVP (this repo):** RN app, Apple HealthKit-shaped schema, dashboard, basic scoring, rule-based recommendations, adaptive check-ins, experiment framework.
-* **V2:** HealthKit bridge (`react-native-health`), Fitbit / Oura OAuth, Celery
-  worker for nightly baseline rebuild, push notifications, sleep staging.
+* **MVP (this repo):** RN app, live Apple HealthKit ingest with anchored
+  incremental sync, dashboard, basic scoring, rule-based recommendations,
+  adaptive check-ins, experiment framework. See
+  [`docs/HEALTHKIT.md`](./docs/HEALTHKIT.md) for the integration contract and
+  [`docs/EVIDENCE.md`](./docs/EVIDENCE.md) for the clinical guidelines that
+  back the engine thresholds.
+* **V2:** Fitbit / Oura OAuth, Celery worker for nightly baseline rebuild,
+  push notifications, deleted-sample propagation, source allowlist UI.
 * **V3:** Per-user correlation learner (caffeine/screens/load → HRV/sleep
   quality), causal inference on experiment outcomes, predictive health
   trajectories, automatic experiment proposals.
