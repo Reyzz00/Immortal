@@ -1,0 +1,25 @@
+# python
+backend/.venv/
+backend/**/__pycache__/
+backend/*.db
+backend/longevity.db
+
+# node
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+
+# os
+.DS_Store
+
+# editors
+.vscode/
+.idea/
+
+# env
+backend/.env
+mobile/.env
+
+# logs
+*.log

@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "Longevity OS",
+    "slug": "longevity-os",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "longevity",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.longevity.os",
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "Longevity OS reads HRV, sleep, resting heart rate, steps and workouts to compute readiness and make daily recommendations.",
+        "NSHealthUpdateUsageDescription": "Longevity OS can log completed recovery sessions back to Apple Health so your rings and history stay in sync."
+      }
+    },
+    "android": {
+      "package": "com.longevity.os"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "extra": {
+      "apiBaseUrl": "https://scholarships-permit-students-therapeutic.trycloudflare.com"
+    },
+    "plugins": [
+      "expo-asset",
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "Longevity OS reads HRV, sleep, resting heart rate, steps and workouts to compute readiness and make daily recommendations.",
+          "NSHealthUpdateUsageDescription": "Longevity OS can log completed recovery sessions back to Apple Health.",
+          "background": true
+        }
+      ]
+    ]
+  }
+}
