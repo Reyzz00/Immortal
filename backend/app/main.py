@@ -3,7 +3,16 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import checkin, experiments, health, insights, recommendations, trends, user_state
+from app.api import (
+    checkin,
+    coach,
+    experiments,
+    health,
+    insights,
+    recommendations,
+    trends,
+    user_state,
+)
 from app.core.config import settings
 from app.db.session import Base, engine
 
@@ -31,6 +40,7 @@ app.include_router(checkin.router)
 app.include_router(experiments.router)
 app.include_router(insights.router)
 app.include_router(trends.router)
+app.include_router(coach.router)
 
 
 @app.get("/")

@@ -9,6 +9,8 @@ import { api } from "@/api/client";
 import type {
   CheckInPrompt,
   CheckInQuestion,
+  CoachPlan,
+  CoachStatus,
   Experiment,
   Insight,
   Recommendation,
@@ -23,6 +25,8 @@ export const qk = {
   checkin: ["checkin", "prompt"] as const,
   experiments: ["experiments"] as const,
   trend: (metric: string, days: number) => ["trend", metric, days] as const,
+  coach: ["coach", "plan"] as const,
+  coachStatus: ["coach", "status"] as const,
 };
 
 export function useUserState(opts?: Partial<UseQueryOptions<UserState>>) {
@@ -93,6 +97,24 @@ export function useSubmitCheckIn() {
       qc.invalidateQueries({ queryKey: qk.checkin });
       qc.invalidateQueries({ queryKey: qk.insights });
     },
+  });
+}
+
+export function useCoachStatus() {
+  return useQuery<CoachStatus>({
+    queryKey: qk.coachStatus,
+    queryFn: () => api<CoachStatus>("/coach/status"),
+    staleTime: 60_000,
+  });
+}
+
+export function useCoachPlan(enabled: boolean) {
+  return useQuery<CoachPlan>({
+    queryKey: qk.coach,
+    queryFn: () => api<CoachPlan>("/coach/plan"),
+    enabled,
+    staleTime: 5 * 60_000, // plan is expensive — don't re-fetch on every mount
+    retry: false,
   });
 }
 

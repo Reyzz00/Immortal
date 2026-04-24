@@ -65,3 +65,39 @@ export type TrendSeries = {
   baseline: number | null;
   points: TrendPoint[];
 };
+
+export type CoachPriorityRec = {
+  domain: string;
+  headline: string;
+  why: string;
+  action: string;
+  evidence: string;
+  expected_impact: string;
+};
+
+export type CoachRec = {
+  domain: string;
+  priority: "critical" | "high" | "medium" | "low";
+  headline: string;
+  why: string;
+  action: string;
+  evidence: string;
+  expected_impact: string;
+  time_sensitive: boolean;
+  time_window: string;
+};
+
+export type CoachPlan = {
+  generated_at: string;
+  overall_score: number;
+  overall_trend: "improving" | "stable" | "declining";
+  priority_recommendation: CoachPriorityRec;
+  recommendations: CoachRec[];
+  positives: string[];
+  tonight_checklist: string[];
+  tomorrow_preview: string;
+  data_gaps: string[];
+  disclaimer: string;
+};
+
+export type CoachStatus = { configured: boolean };

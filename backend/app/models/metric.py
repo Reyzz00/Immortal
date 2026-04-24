@@ -20,6 +20,17 @@ class HealthMetric(Base):
 
     __table_args__ = (
         Index("ix_metric_user_type_time", "user_id", "metric_type", "timestamp"),
+        # Dedup contract: a (user, instant, type, source) tuple is unique.
+        # Same instant from the same source can't disagree on value, so we drop
+        # repeats on re-sync rather than upsert. See docs/HEALTHKIT.md.
+        Index(
+            "uq_metric_user_time_type_source",
+            "user_id",
+            "timestamp",
+            "metric_type",
+            "source",
+            unique=True,
+        ),
     )
 
 

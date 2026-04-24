@@ -1,9 +1,17 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useRecommendationAction, useRecommendations, useUserState } from "@/api/queries";
+import {
+  useCoachPlan,
+  useCoachStatus,
+  useRecommendationAction,
+  useRecommendations,
+  useUserState,
+} from "@/api/queries";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
+import { CoachPlanSections } from "@/components/CoachPlanSections";
+import { CoachPriorityCard } from "@/components/CoachPriorityCard";
 import { HealthSyncCard } from "@/components/HealthSyncCard";
 import { ScoreRing } from "@/components/ScoreRing";
 import { palette, radii, spacing } from "@/theme";
@@ -26,6 +34,9 @@ export function DashboardScreen() {
   const { data: state, isLoading, error } = useUserState();
   const { data: recs } = useRecommendations();
   const action = useRecommendationAction();
+  const { data: coachStatus } = useCoachStatus();
+  const coachEnabled = coachStatus?.configured ?? false;
+  const coach = useCoachPlan(coachEnabled);
 
   if (isLoading) {
     return <Loading text="Crunching today's state…" />;
@@ -35,6 +46,7 @@ export function DashboardScreen() {
   }
 
   const top = recs?.[0];
+  const plan = coach.data;
 
   const sleep = state.sleep_hours_latest;
   const hrv = state.hrv_latest;
@@ -49,7 +61,17 @@ export function DashboardScreen() {
           <Text style={styles.overviewSub}>{readinessCopy(state.composite_readiness)}</Text>
         </View>
 
-        {top ? (
+        {plan ? (
+          <CoachPriorityCard rec={plan.priority_recommendation} />
+        ) : coach.isFetching ? (
+          <Card tone="ink" style={styles.recCard}>
+            <Text style={styles.recKicker}>EVIDENCE-BASED COACH</Text>
+            <Text style={styles.recMsg}>Generating today's plan…</Text>
+            <Text style={styles.recReason}>
+              Claude is cross-referencing your data against 30+ peer-reviewed studies.
+            </Text>
+          </Card>
+        ) : top ? (
           <Card tone="ink" style={styles.recCard}>
             <View style={styles.recHeader}>
               <View style={styles.recIconWrap}>
@@ -158,6 +180,8 @@ export function DashboardScreen() {
             icon="≋"
           />
         </View>
+
+        {plan ? <CoachPlanSections plan={plan} /> : null}
 
         <HealthSyncCard />
 

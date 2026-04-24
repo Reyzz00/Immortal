@@ -1,19 +1,75 @@
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { StyleSheet, Text, View } from "react-native";
+import {
+  createBottomTabNavigator,
+  type BottomTabBarProps,
+} from "@react-navigation/bottom-tabs";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CheckinScreen } from "@/screens/CheckinScreen";
 import { DashboardScreen } from "@/screens/DashboardScreen";
 import { ExperimentsScreen } from "@/screens/ExperimentsScreen";
 import { InsightsScreen } from "@/screens/InsightsScreen";
 import { TrendsScreen } from "@/screens/TrendsScreen";
-import { palette, radii, spacing } from "@/theme";
+import { palette, shadow, spacing } from "@/theme";
 
 const Tab = createBottomTabNavigator();
 
-function tabIcon(glyph: string) {
-  return ({ focused }: { focused: boolean }) => (
-    <View style={[tabStyles.icon, focused && tabStyles.iconActive]}>
-      <Text style={[tabStyles.iconGlyph, focused && tabStyles.iconGlyphActive]}>{glyph}</Text>
+const ICONS: Record<string, string> = {
+  Today: "◉",
+  Insights: "✦",
+  "Check-in": "✎",
+  Trends: "∿",
+  Experiments: "△",
+};
+
+function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View
+      pointerEvents="box-none"
+      style={[styles.barWrap, { paddingBottom: Math.max(insets.bottom, spacing.l) }]}
+    >
+      <View style={styles.bar}>
+        {state.routes.map((route, index) => {
+          const { options } = descriptors[route.key];
+          const focused = state.index === index;
+          const label = (options.tabBarLabel as string) ?? options.title ?? route.name;
+          const glyph = ICONS[route.name] ?? "•";
+
+          const onPress = () => {
+            const event = navigation.emit({
+              type: "tabPress",
+              target: route.key,
+              canPreventDefault: true,
+            });
+            if (!focused && !event.defaultPrevented) {
+              navigation.navigate(route.name as never, route.params as never);
+            }
+          };
+
+          const onLongPress = () => {
+            navigation.emit({ type: "tabLongPress", target: route.key });
+          };
+
+          return (
+            <Pressable
+              key={route.key}
+              accessibilityRole="button"
+              accessibilityState={focused ? { selected: true } : {}}
+              accessibilityLabel={label}
+              onPress={onPress}
+              onLongPress={onLongPress}
+              style={({ pressed }) => [
+                styles.pill,
+                focused && styles.pillActive,
+                pressed && { transform: [{ scale: 0.94 }] },
+              ]}
+            >
+              <Text style={[styles.glyph, focused && styles.glyphActive]}>{glyph}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -22,79 +78,75 @@ export function RootTabs() {
   return (
     <Tab.Navigator
       initialRouteName="Check-in"
-      screenOptions={{
-        headerShown: false,
-        tabBarShowLabel: true,
-        tabBarActiveTintColor: palette.text,
-        tabBarInactiveTintColor: palette.textSoft,
-        tabBarStyle: {
-          backgroundColor: palette.surface,
-          borderTopWidth: 0,
-          height: 88,
-          paddingTop: 10,
-          paddingBottom: 22,
-          paddingHorizontal: spacing.s,
-          shadowColor: "#2A1D0C",
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.05,
-          shadowRadius: 12,
-          elevation: 10,
-        },
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: "700",
-          letterSpacing: 0.3,
-          marginTop: 2,
-        },
-        tabBarItemStyle: { paddingVertical: 4 },
-      }}
+      tabBar={(props) => <FloatingTabBar {...props} />}
+      screenOptions={{ headerShown: false, tabBarShowLabel: false }}
     >
       <Tab.Screen
         name="Today"
         component={DashboardScreen}
-        options={{ tabBarIcon: tabIcon("◉"), title: "Today" }}
+        options={{ title: "Today" }}
       />
       <Tab.Screen
         name="Insights"
         component={InsightsScreen}
-        options={{ tabBarIcon: tabIcon("✦"), title: "Insights" }}
+        options={{ title: "Insights" }}
       />
       <Tab.Screen
         name="Check-in"
         component={CheckinScreen}
-        options={{ tabBarIcon: tabIcon("✎"), title: "Check-in" }}
+        options={{ title: "Check-in" }}
       />
       <Tab.Screen
         name="Trends"
         component={TrendsScreen}
-        options={{ tabBarIcon: tabIcon("∿"), title: "Trends" }}
+        options={{ title: "Trends" }}
       />
       <Tab.Screen
         name="Experiments"
         component={ExperimentsScreen}
-        options={{ tabBarIcon: tabIcon("△"), title: "Labs" }}
+        options={{ title: "Labs" }}
       />
     </Tab.Navigator>
   );
 }
 
-const tabStyles = StyleSheet.create({
-  icon: {
-    width: 42,
-    height: 30,
-    borderRadius: radii.pill,
+const PILL_SIZE = 44;
+
+const styles = StyleSheet.create({
+  barWrap: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    paddingTop: spacing.s,
+  },
+  bar: {
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: spacing.s,
+    paddingHorizontal: spacing.s,
   },
-  iconActive: {
-    backgroundColor: palette.ink,
+  pill: {
+    width: PILL_SIZE,
+    height: PILL_SIZE,
+    borderRadius: PILL_SIZE / 2,
+    backgroundColor: palette.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    ...shadow.card,
   },
-  iconGlyph: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: palette.textSoft,
+  pillActive: {
+    backgroundColor: palette.accent,
+    ...shadow.floating,
   },
-  iconGlyphActive: {
-    color: palette.accent,
+  glyph: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: palette.textMuted,
+  },
+  glyphActive: {
+    color: palette.ink,
   },
 });
