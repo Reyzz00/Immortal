@@ -48,6 +48,11 @@ export const radii = {
   pill: 999,
 };
 
+export const layout = {
+  tabBarHeight: 44,
+  tabBarBottomSpace: 110,
+};
+
 export const shadow = {
   card: {
     shadowColor: "#2A1D0C",

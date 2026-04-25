@@ -1,12 +1,12 @@
 import { useNavigation } from "@react-navigation/native";
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useCheckInPrompt, useSubmitCheckIn } from "@/api/queries";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
-import { palette, radii, shadow, spacing } from "@/theme";
+import { layout, palette, radii, shadow, spacing } from "@/theme";
 import type { CheckInQuestion } from "@/types";
 
 type Answer = boolean | number | string | null;
@@ -16,27 +16,37 @@ export function CheckinScreen() {
   const { data, isLoading, refetch } = useCheckInPrompt();
   const submit = useSubmitCheckIn();
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
+  const [index, setIndex] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+
+  const questions = data?.questions ?? [];
+  const total = questions.length;
+  const current = questions[index];
+  const answeredCount = questions.filter(
+    (q) => answers[q.key] !== undefined && answers[q.key] !== null,
+  ).length;
+
+  const allAnswered = useMemo(
+    () => questions.length > 0 && questions.every((q) => answers[q.key] !== undefined && answers[q.key] !== null),
+    [answers, questions],
+  );
 
   useEffect(() => {
     if (!submitted) return;
-    const t = setTimeout(() => {
-      navigation.navigate("Today" as never);
-    }, 1400);
+    const t = setTimeout(() => navigation.navigate("Today" as never), 1400);
     return () => clearTimeout(t);
   }, [submitted, navigation]);
 
-  const questions = data?.questions ?? [];
-  const complete = useMemo(
-    () => questions.every((q) => answers[q.key] !== undefined && answers[q.key] !== null),
-    [answers, questions]
-  );
-  const answeredCount = questions.filter(
-    (q) => answers[q.key] !== undefined && answers[q.key] !== null
-  ).length;
-
   function setAnswer(key: string, value: Answer) {
     setAnswers((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function next() {
+    if (index < total - 1) setIndex(index + 1);
+  }
+
+  function back() {
+    if (index > 0) setIndex(index - 1);
   }
 
   async function handleSubmit() {
@@ -62,9 +72,7 @@ export function CheckinScreen() {
             <Text style={styles.doneEmoji}>✓</Text>
           </View>
           <Text style={styles.doneTitle}>Logged.</Text>
-          <Text style={styles.doneBody}>
-            Taking you to today's plan…
-          </Text>
+          <Text style={styles.doneBody}>Taking you to today's plan…</Text>
           <View style={{ height: spacing.xl }} />
           <Button
             title="Go to today"
@@ -76,6 +84,7 @@ export function CheckinScreen() {
             title="Ask me again"
             onPress={() => {
               setAnswers({});
+              setIndex(0);
               setSubmitted(false);
               refetch();
             }}
@@ -86,60 +95,88 @@ export function CheckinScreen() {
     );
   }
 
-  const progress = questions.length ? answeredCount / questions.length : 0;
+  if (!current) {
+    return (
+      <SafeAreaView style={styles.safe} edges={["top"]}>
+        <View style={styles.center}>
+          <Text style={{ color: palette.textMuted }}>No questions for today.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const progress = total ? (index + 1) / total : 0;
+  const isLast = index === total - 1;
+  const currentAnswered =
+    answers[current.key] !== undefined && answers[current.key] !== null;
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.kicker}>DAILY CHECK-IN</Text>
-          <Text style={styles.title}>
-            How are you{"\n"}feeling today?
-          </Text>
-          <Text style={styles.sub}>
-            Questions adapt to your data — anomalies get follow-ups.
-          </Text>
-        </View>
-
+      <View style={styles.topBar}>
+        <Pressable onPress={back} disabled={index === 0} style={styles.backBtn} hitSlop={8}>
+          <Text style={[styles.backGlyph, index === 0 && { opacity: 0.3 }]}>←</Text>
+        </Pressable>
         <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: `${Math.max(progress * 100, 4)}%` }]} />
+          <View style={[styles.progressFill, { width: `${Math.max(progress * 100, 5)}%` }]} />
         </View>
-        <Text style={styles.progressText}>
-          {answeredCount} of {questions.length} answered
+        <Text style={styles.stepCount}>
+          {index + 1}/{total}
         </Text>
+      </View>
 
-        {questions.map((q, idx) => (
-          <Card key={q.key} style={styles.q}>
-            <View style={styles.qHeader}>
-              <View style={styles.qIndex}>
-                <Text style={styles.qIndexText}>{idx + 1}</Text>
+      <View style={styles.headerWrap}>
+        <Text style={styles.kicker}>DAILY CHECK-IN</Text>
+        <Text style={styles.headerTitle}>How are you{"\n"}feeling today?</Text>
+      </View>
+
+      <View style={styles.cardArea}>
+        <Card key={current.key} style={styles.questionCard} elevated>
+          <View style={styles.qHeader}>
+            <View style={styles.qIndex}>
+              <Text style={styles.qIndexText}>Q{index + 1}</Text>
+            </View>
+            {current.reason !== "baseline" ? (
+              <View style={styles.reasonPill}>
+                <View style={styles.reasonDot} />
+                <Text style={styles.reasonText}>
+                  {current.reason.replace(/_/g, " ")}
+                </Text>
               </View>
-              {q.reason !== "baseline" ? (
-                <View style={styles.reasonPill}>
-                  <Text style={styles.reasonText}>{q.reason.replace(/_/g, " ")}</Text>
-                </View>
-              ) : null}
-            </View>
-            <Text style={styles.prompt}>{q.prompt}</Text>
-            <View style={styles.answerWrap}>
-              <QuestionInput
-                q={q}
-                value={answers[q.key] ?? null}
-                onChange={(v) => setAnswer(q.key, v)}
-              />
-            </View>
-          </Card>
-        ))}
+            ) : null}
+          </View>
 
-        <View style={styles.submitWrap}>
+          <Text style={styles.prompt}>{current.prompt}</Text>
+
+          <View style={styles.answerWrap}>
+            <QuestionInput
+              q={current}
+              value={answers[current.key] ?? null}
+              onChange={(v) => setAnswer(current.key, v)}
+            />
+          </View>
+        </Card>
+      </View>
+
+      <View style={styles.footer}>
+        <Text style={styles.footerCount}>
+          {answeredCount} of {total} answered
+        </Text>
+        {isLast ? (
           <Button
             title={submit.isPending ? "Submitting…" : "Submit check-in"}
             onPress={handleSubmit}
-            disabled={!complete || submit.isPending}
+            disabled={!allAnswered || submit.isPending}
             size="lg"
           />
-        </View>
-      </ScrollView>
+        ) : (
+          <Button
+            title="Next question"
+            onPress={next}
+            disabled={!currentAnswered}
+            size="lg"
+          />
+        )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -211,67 +248,101 @@ function QuestionInput({
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.xl },
-  container: { padding: spacing.l, gap: spacing.m, paddingBottom: spacing.xxl * 2 },
 
-  header: { marginTop: spacing.s, marginBottom: spacing.m },
-  kicker: {
-    color: palette.accentDeep,
-    fontSize: 11,
-    letterSpacing: 2,
-    fontWeight: "800",
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing.l,
+    paddingVertical: spacing.m,
+    gap: spacing.m,
   },
-  title: {
-    color: palette.text,
-    fontSize: 34,
-    fontWeight: "800",
-    marginTop: spacing.s,
-    letterSpacing: -0.5,
-    lineHeight: 40,
+  backBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: palette.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    ...shadow.card,
   },
-  sub: { color: palette.textMuted, fontSize: 14, marginTop: spacing.s, lineHeight: 20 },
-
+  backGlyph: { fontSize: 17, fontWeight: "800", color: palette.text },
   progressTrack: {
-    height: 6,
-    borderRadius: 3,
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: palette.surfaceAlt,
     overflow: "hidden",
   },
   progressFill: {
     height: "100%",
     backgroundColor: palette.accent,
-    borderRadius: 3,
+    borderRadius: 4,
   },
-  progressText: {
+  stepCount: {
     color: palette.textMuted,
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.5,
+    fontSize: 12,
+    fontWeight: "800",
+    minWidth: 36,
+    textAlign: "right",
   },
 
-  q: { gap: spacing.m },
+  headerWrap: { paddingHorizontal: spacing.l, marginTop: spacing.s, marginBottom: spacing.l },
+  kicker: {
+    color: palette.accentDeep,
+    fontSize: 11,
+    letterSpacing: 2,
+    fontWeight: "800",
+  },
+  headerTitle: {
+    color: palette.text,
+    fontSize: 28,
+    fontWeight: "800",
+    marginTop: spacing.s,
+    letterSpacing: -0.5,
+    lineHeight: 32,
+  },
+
+  cardArea: {
+    flex: 1,
+    paddingHorizontal: spacing.l,
+    justifyContent: "center",
+  },
+  questionCard: {
+    padding: spacing.xl,
+    gap: spacing.l,
+    minHeight: 320,
+  },
   qHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
   qIndex: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: palette.surfaceAlt,
-    alignItems: "center",
-    justifyContent: "center",
+    paddingHorizontal: spacing.m,
+    paddingVertical: 6,
+    borderRadius: radii.pill,
+    backgroundColor: palette.ink,
   },
-  qIndexText: { color: palette.text, fontSize: 12, fontWeight: "800" },
+  qIndexText: { color: palette.accent, fontSize: 11, fontWeight: "900", letterSpacing: 0.5 },
   reasonPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     paddingHorizontal: spacing.m,
     paddingVertical: 5,
     borderRadius: radii.pill,
     backgroundColor: palette.peachSoft,
   },
+  reasonDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: palette.accent },
   reasonText: { color: palette.accentDeep, fontSize: 10, fontWeight: "800", letterSpacing: 0.5 },
-  prompt: { color: palette.text, fontSize: 18, fontWeight: "700", lineHeight: 24 },
-  answerWrap: { marginTop: spacing.xs },
+  prompt: {
+    color: palette.text,
+    fontSize: 26,
+    fontWeight: "800",
+    lineHeight: 32,
+    letterSpacing: -0.4,
+  },
+  answerWrap: { marginTop: "auto" },
 
   scaleLabels: {
     flexDirection: "row",
@@ -281,9 +352,9 @@ const styles = StyleSheet.create({
   scaleEnd: { color: palette.textSoft, fontSize: 11, fontWeight: "700", letterSpacing: 1 },
   scale: { flexDirection: "row", justifyContent: "space-between" },
   scaleBtn: {
-    width: 28,
-    height: 40,
-    borderRadius: 14,
+    width: 26,
+    height: 44,
+    borderRadius: 13,
     backgroundColor: palette.surfaceAlt,
     alignItems: "center",
     justifyContent: "center",
@@ -303,10 +374,8 @@ const styles = StyleSheet.create({
     backgroundColor: palette.surfaceAlt,
     alignItems: "center",
   },
-  boolBtnActive: {
-    backgroundColor: palette.ink,
-  },
-  boolText: { color: palette.textMuted, fontWeight: "800", fontSize: 15 },
+  boolBtnActive: { backgroundColor: palette.ink },
+  boolText: { color: palette.textMuted, fontWeight: "800", fontSize: 16 },
   boolTextActive: { color: palette.bgAlt },
 
   choiceWrap: { gap: spacing.s },
@@ -324,7 +393,19 @@ const styles = StyleSheet.create({
   choiceText: { color: palette.text, fontWeight: "600", fontSize: 14 },
   choiceTextActive: { color: palette.accentDeep, fontWeight: "700" },
 
-  submitWrap: { marginTop: spacing.m },
+  footer: {
+    paddingHorizontal: spacing.l,
+    paddingTop: spacing.m,
+    paddingBottom: layout.tabBarBottomSpace,
+    gap: spacing.s,
+  },
+  footerCount: {
+    color: palette.textMuted,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+    textAlign: "center",
+  },
 
   doneBadge: {
     width: 88,

@@ -27,6 +27,9 @@ export function Button({ title, onPress, variant = "primary", size = "md", disab
       ]}
     >
       <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.8}
         style={[
           styles.text,
           size === "lg" && styles.lgText,
@@ -45,15 +48,17 @@ export function Button({ title, onPress, variant = "primary", size = "md", disab
 
 const styles = StyleSheet.create({
   btn: {
-    paddingVertical: spacing.m + 2,
-    paddingHorizontal: spacing.xl,
+    minHeight: 44,
+    paddingVertical: spacing.s + 2,
+    paddingHorizontal: spacing.l,
     borderRadius: radii.pill,
     alignItems: "center",
     justifyContent: "center",
   },
   lg: {
-    paddingVertical: spacing.l,
-    paddingHorizontal: spacing.xl,
+    minHeight: 52,
+    paddingVertical: spacing.m + 2,
+    paddingHorizontal: spacing.l,
   },
   primary: { backgroundColor: palette.ink },
   accent: { backgroundColor: palette.accent },
@@ -64,8 +69,8 @@ const styles = StyleSheet.create({
   },
   ghost: { backgroundColor: "transparent" },
   disabled: { opacity: 0.45 },
-  text: { fontSize: 15, fontWeight: "700", letterSpacing: 0.2 },
-  lgText: { fontSize: 16 },
+  text: { fontSize: 14, fontWeight: "700", letterSpacing: 0.2, textAlign: "center" },
+  lgText: { fontSize: 15 },
   primaryText: { color: palette.bgAlt },
   accentText: { color: palette.ink },
   secondaryText: { color: palette.text },

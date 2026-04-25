@@ -1,6 +1,6 @@
 # Apple HealthKit setup
 
-Longevity OS pulls HRV, sleep, resting heart rate, steps and workouts from Apple Health via [`@kingstinct/react-native-healthkit`]. The wiring is already done:
+Immortal pulls HRV, sleep, resting heart rate, steps and workouts from Apple Health via [`@kingstinct/react-native-healthkit`]. The wiring is already done:
 
 - `mobile/src/services/healthkit.ts` — request permissions + pull recent samples + POST to `/health/sync`.
 - `mobile/src/hooks/useHealthKit.ts` — React Query mutation.
@@ -23,7 +23,7 @@ npx eas-cli login                 # creates/logs into your Expo account
 ```
 
 ### 3. Tell EAS about this project
-From `longevity-os/mobile/`:
+From `mobile/`:
 ```bash
 npx eas-cli init --id-auto        # creates an Expo project slug, writes it into app.json
 ```
@@ -59,6 +59,6 @@ The app reads `expo.extra.apiBaseUrl` from `app.json`. Right now it points at th
 ## Troubleshooting
 
 - **"HealthKit native module not found"** — you opened the app in Expo Go instead of the dev client, or the build didn't include the module. Rebuild with `eas build`.
-- **Permission prompt doesn't appear** — you already denied it; go to iOS Settings → Privacy & Security → Health → Longevity OS → enable categories.
+- **Permission prompt doesn't appear** — you already denied it; go to iOS Settings → Privacy & Security → Health → Immortal → enable categories.
 - **Sync returns 0 metrics** — HealthKit has no data for the window. Wear your watch for a day and retry.
 - **Android** — HealthKit is iOS-only. For Android, add `react-native-health-connect` with a parallel `syncRecent()` — the backend schema already accepts whatever `source` field you pass.

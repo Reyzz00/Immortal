@@ -1,22 +1,22 @@
 {
   "expo": {
-    "name": "Longevity OS",
-    "slug": "longevity-os",
+    "name": "Immortal",
+    "slug": "immortal",
     "version": "0.1.0",
     "orientation": "portrait",
-    "scheme": "longevity",
+    "scheme": "immortal",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.longevity.os",
+      "bundleIdentifier": "com.immortal.app",
       "infoPlist": {
-        "NSHealthShareUsageDescription": "Longevity OS reads HRV, sleep, resting heart rate, steps and workouts to compute readiness and make daily recommendations.",
-        "NSHealthUpdateUsageDescription": "Longevity OS can log completed recovery sessions back to Apple Health so your rings and history stay in sync."
+        "NSHealthShareUsageDescription": "Immortal reads HRV, sleep, resting heart rate, steps and workouts to compute readiness and make daily recommendations.",
+        "NSHealthUpdateUsageDescription": "Immortal can log completed recovery sessions back to Apple Health so your rings and history stay in sync."
       }
     },
     "android": {
-      "package": "com.longevity.os"
+      "package": "com.immortal.app"
     },
     "web": {
       "bundler": "metro"
@@ -29,8 +29,8 @@
       [
         "@kingstinct/react-native-healthkit",
         {
-          "NSHealthShareUsageDescription": "Longevity OS reads HRV, sleep, resting heart rate, steps and workouts to compute readiness and make daily recommendations.",
-          "NSHealthUpdateUsageDescription": "Longevity OS can log completed recovery sessions back to Apple Health.",
+          "NSHealthShareUsageDescription": "Immortal reads HRV, sleep, resting heart rate, steps and workouts to compute readiness and make daily recommendations.",
+          "NSHealthUpdateUsageDescription": "Immortal can log completed recovery sessions back to Apple Health.",
           "background": true
         }
       ]

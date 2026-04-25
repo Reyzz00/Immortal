@@ -1,24 +1,74 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Linking, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { useHealthKit } from "@/hooks/useHealthKit";
-import { palette, radii, spacing } from "@/theme";
+import { palette, spacing } from "@/theme";
+
+function formatRelative(d: Date | null): string | null {
+  if (!d) return null;
+  const diffMs = Date.now() - d.getTime();
+  if (diffMs < 0) return "just now";
+  const sec = Math.round(diffMs / 1000);
+  if (sec < 60) return "just now";
+  const min = Math.round(sec / 60);
+  if (min < 60) return `${min} min ago`;
+  const hr = Math.round(min / 60);
+  if (hr < 24) return `${hr} hr ago`;
+  const day = Math.round(hr / 24);
+  return `${day} day${day === 1 ? "" : "s"} ago`;
+}
 
 export function HealthSyncCard() {
-  const { support, deviceReady, sync } = useHealthKit();
+  const { support, deviceReady, sync, lastSync } = useHealthKit();
   const ready = support.kind === "ready" && deviceReady === true;
-  const status = sync.isPending
-    ? "Syncing last 30 days…"
-    : sync.data
-      ? `Synced ${sync.data.ingested} metrics.`
-      : sync.error
-        ? (sync.error as Error).message
-        : ready
-          ? "Connected. Pull HRV, sleep, steps, resting HR and workouts on demand."
-          : support.kind === "ready"
-            ? "HealthKit is loading…"
-            : support.message;
+  const denied = support.kind === "denied";
+
+  const subtitle = ready
+    ? lastSync
+      ? `Last synced ${formatRelative(lastSync)}`
+      : "Connected. Sync to backfill the last 60 days."
+    : support.kind === "ready"
+      ? "Initializing…"
+      : support.message;
+
+  let status: string;
+  if (sync.isPending) {
+    status = "Syncing HealthKit…";
+  } else if (sync.error) {
+    status = (sync.error as Error).message;
+  } else if (sync.data) {
+    const { ingested, skipped, byType } = sync.data;
+    if (ingested === 0 && skipped === 0) {
+      status = "All caught up — nothing new since last sync.";
+    } else {
+      const breakdown = (
+        [
+          ["HRV", byType.hrv],
+          ["RHR", byType.resting_hr],
+          ["Sleep", byType.sleep_hours],
+          ["Steps", byType.steps],
+          ["Workouts", byType.workout_minutes],
+        ] as const
+      )
+        .filter(([, n]) => n > 0)
+        .map(([k, n]) => `${k} ${n}`)
+        .join(" · ");
+      const tail = skipped > 0 ? ` (${skipped} already on file)` : "";
+      status = `Ingested ${ingested}${tail}${breakdown ? ` — ${breakdown}` : ""}.`;
+    }
+  } else {
+    status = subtitle;
+  }
+
+  const dotColor = ready ? palette.success : denied ? palette.danger : palette.warn;
+  const headline = ready
+    ? "Connected"
+    : denied
+      ? "Permission needed"
+      : support.kind === "ready"
+        ? "Warming up"
+        : "Setup required";
 
   return (
     <Card tone="mint" style={styles.card}>
@@ -28,20 +78,39 @@ export function HealthSyncCard() {
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.kicker}>APPLE HEALTH</Text>
-          <Text style={styles.title}>
-            {ready ? "Connected" : support.kind === "ready" ? "Warming up" : "Setup required"}
-          </Text>
+          <Text style={styles.title}>{headline}</Text>
         </View>
-        <View style={[styles.dot, { backgroundColor: ready ? palette.success : palette.warn }]} />
+        <View style={[styles.dot, { backgroundColor: dotColor }]} />
       </View>
+
       <Text style={styles.body}>{status}</Text>
+
       {ready ? (
         <View style={styles.actionsRow}>
           <View style={{ flex: 1 }}>
             <Button
               title={sync.isPending ? "Syncing…" : "Sync now"}
-              onPress={() => sync.mutate(30)}
+              onPress={() => sync.mutate()}
               variant="primary"
+              disabled={sync.isPending}
+            />
+          </View>
+        </View>
+      ) : denied ? (
+        <View style={styles.actionsRow}>
+          <View style={{ flex: 1 }}>
+            <Button
+              title="Open Settings"
+              onPress={() => Linking.openURL("app-settings:")}
+              variant="primary"
+            />
+          </View>
+          <View style={{ width: spacing.s }} />
+          <View style={{ flex: 1 }}>
+            <Button
+              title="Try again"
+              onPress={() => sync.mutate()}
+              variant="secondary"
               disabled={sync.isPending}
             />
           </View>

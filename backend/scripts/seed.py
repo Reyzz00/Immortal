@@ -33,7 +33,7 @@ def seed():
             db.execute(delete(model))
         db.commit()
 
-        user = User(id=DEMO_USER_ID, email="demo@longevity.os", wearable_type="apple_health")
+        user = User(id=DEMO_USER_ID, email="demo@immortal.app", wearable_type="apple_health")
         db.add(user)
         db.commit()
 

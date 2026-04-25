@@ -13,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useExperiments, useStartExperiment } from "@/api/queries";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
-import { palette, radii, shadow, spacing } from "@/theme";
+import { layout, palette, radii, shadow, spacing } from "@/theme";
 import type { Experiment } from "@/types";
 
 const SUGGESTIONS: {
@@ -267,7 +267,7 @@ function SuggestionCard({
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
-  container: { padding: spacing.l, gap: spacing.m, paddingBottom: spacing.xxl * 2 },
+  container: { padding: spacing.l, gap: spacing.m, paddingBottom: layout.tabBarBottomSpace },
   header: { marginTop: spacing.s, marginBottom: spacing.s },
   availablePill: {
     flexDirection: "row",

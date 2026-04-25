@@ -1,12 +1,14 @@
 import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useTrend } from "@/api/queries";
+import { useInsights, useTrend } from "@/api/queries";
 import { Card } from "@/components/Card";
 import { Chip } from "@/components/Chip";
+import { HealthFeedback } from "@/components/HealthFeedback";
 import { LineChart } from "@/components/LineChart";
 import { useUIStore } from "@/state/store";
-import { palette, radii, spacing } from "@/theme";
+import { layout, palette, radii, spacing } from "@/theme";
+import type { Insight } from "@/types";
 
 const METRICS: { key: string; label: string; unit: string; color: string; tint: string }[] = [
   { key: "hrv", label: "HRV", unit: "ms", color: palette.accent, tint: palette.peachSoft },
@@ -16,33 +18,67 @@ const METRICS: { key: string; label: string; unit: string; color: string; tint: 
   { key: "load_score", label: "Load", unit: "", color: palette.danger, tint: palette.coralSoft },
 ];
 
-export function TrendsScreen() {
+const DESCRIPTIONS: Record<string, string> = {
+  hrv: "Heart rate variability reflects nervous system balance. Higher = more recovered.",
+  sleep_hours: "Total time asleep. Consistency matters as much as quantity.",
+  resting_hr: "Morning resting heart rate trends down with fitness and recovery.",
+  readiness: "Composite score combining recovery, sleep, and stress.",
+  load_score: "Training load vs. baseline. Extremes in either direction cost readiness.",
+};
+
+const KIND_TINT: Record<Insight["kind"], string> = {
+  trend: palette.lavenderSoft,
+  anomaly: palette.coralSoft,
+  correlation: palette.peachSoft,
+  win: palette.sageSoft,
+};
+const KIND_ACCENT: Record<Insight["kind"], string> = {
+  trend: palette.lavender,
+  anomaly: palette.danger,
+  correlation: palette.accent,
+  win: palette.success,
+};
+const KIND_LABEL: Record<Insight["kind"], string> = {
+  trend: "TREND",
+  anomaly: "ANOMALY",
+  correlation: "CORRELATION",
+  win: "WIN",
+};
+const KIND_GLYPH: Record<Insight["kind"], string> = {
+  trend: "∿",
+  anomaly: "!",
+  correlation: "⇌",
+  win: "★",
+};
+
+export function PulseScreen() {
   const selected = useUIStore((s) => s.selectedTrend);
   const setSelected = useUIStore((s) => s.setSelectedTrend);
   const { width } = useWindowDimensions();
   const chartWidth = width - spacing.l * 2 - spacing.l * 2;
 
   const active = METRICS.find((m) => m.key === selected) ?? METRICS[0];
-  const { data, isLoading } = useTrend(active.key, 30);
+  const { data: trend, isLoading } = useTrend(active.key, 30);
+  const { data: insights } = useInsights();
 
-  const latest = data?.points[data.points.length - 1];
+  const latest = trend?.points[trend.points.length - 1];
   const delta =
-    data && data.points.length >= 2
-      ? data.points[data.points.length - 1].value - data.points[0].value
+    trend && trend.points.length >= 2
+      ? trend.points[trend.points.length - 1].value - trend.points[0].value
       : 0;
   const pctDelta =
-    data && data.points.length >= 2 && data.points[0].value
-      ? (delta / data.points[0].value) * 100
+    trend && trend.points.length >= 2 && trend.points[0].value
+      ? (delta / trend.points[0].value) * 100
       : 0;
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.kicker}>30 DAYS · BASELINE-RELATIVE</Text>
-          <Text style={styles.title}>Trends</Text>
+          <Text style={styles.kicker}>YOUR PULSE · 30 DAYS</Text>
+          <Text style={styles.title}>Trends &{"\n"}insights</Text>
           <Text style={styles.sub}>
-            Dashed line shows your rolling baseline.
+            How your biometrics are moving — and what your data is telling us.
           </Text>
         </View>
 
@@ -62,7 +98,7 @@ export function TrendsScreen() {
         </ScrollView>
 
         <Card>
-          <View style={styles.headerRow}>
+          <View style={styles.trendHeader}>
             <View style={{ flex: 1 }}>
               <Text style={styles.metricLabel}>{active.label.toUpperCase()}</Text>
               <View style={styles.metricValueRow}>
@@ -91,8 +127,8 @@ export function TrendsScreen() {
 
           <View style={styles.chartWrap}>
             <LineChart
-              points={data?.points ?? []}
-              baseline={data?.baseline ?? null}
+              points={trend?.points ?? []}
+              baseline={trend?.baseline ?? null}
               width={chartWidth}
               height={220}
               stroke={active.color}
@@ -101,50 +137,96 @@ export function TrendsScreen() {
           </View>
 
           <View style={styles.footRow}>
-            {data?.baseline != null ? (
+            {trend?.baseline != null ? (
               <View style={styles.baselineTag}>
                 <View style={[styles.baselineDash, { borderColor: palette.textSoft }]} />
                 <Text style={styles.baselineText}>
-                  Baseline {data.baseline.toFixed(1)}
+                  Baseline {trend.baseline.toFixed(1)}
                   {active.unit ? ` ${active.unit}` : ""}
                 </Text>
               </View>
             ) : null}
-            {isLoading ? (
-              <Text style={styles.loadingText}>Loading…</Text>
-            ) : null}
+            {isLoading ? <Text style={styles.loadingText}>Loading…</Text> : null}
           </View>
         </Card>
 
-        <Card tone="sunken">
-          <Text style={styles.tipKicker}>WHY IT MATTERS</Text>
-          <Text style={styles.tipBody}>{DESCRIPTIONS[active.key]}</Text>
-        </Card>
-
-        {data && data.points.length >= 7 ? (
+        {trend && trend.points.length >= 7 ? (
           <View style={styles.statRow}>
             <MiniStat
               tone={active.tint}
               accent={active.color}
               label="Min"
-              value={Math.min(...data.points.map((p) => p.value)).toFixed(1)}
+              value={Math.min(...trend.points.map((p) => p.value)).toFixed(1)}
             />
             <MiniStat
               tone={active.tint}
               accent={active.color}
               label="Avg"
               value={(
-                data.points.reduce((s, p) => s + p.value, 0) / data.points.length
+                trend.points.reduce((s, p) => s + p.value, 0) / trend.points.length
               ).toFixed(1)}
             />
             <MiniStat
               tone={active.tint}
               accent={active.color}
               label="Max"
-              value={Math.max(...data.points.map((p) => p.value)).toFixed(1)}
+              value={Math.max(...trend.points.map((p) => p.value)).toFixed(1)}
             />
           </View>
         ) : null}
+
+        <Card tone="sunken">
+          <Text style={styles.tipKicker}>WHY IT MATTERS</Text>
+          <Text style={styles.tipBody}>{DESCRIPTIONS[active.key]}</Text>
+        </Card>
+
+        <HealthFeedback />
+
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>WHAT WE'RE SEEING</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        {!insights || insights.length === 0 ? (
+          <Card tone="sunken">
+            <Text style={{ color: palette.textMuted }}>Nothing unusual detected yet.</Text>
+          </Card>
+        ) : (
+          <View style={styles.insightList}>
+            {insights.map((item) => (
+              <Card key={item.id} style={styles.insightItem}>
+                <View style={styles.insightTop}>
+                  <View
+                    style={[
+                      styles.insightGlyphWrap,
+                      { backgroundColor: KIND_TINT[item.kind] },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.insightGlyph, { color: KIND_ACCENT[item.kind] }]}
+                    >
+                      {KIND_GLYPH[item.kind]}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.insightKind, { color: KIND_ACCENT[item.kind] }]}>
+                      {KIND_LABEL[item.kind]}
+                    </Text>
+                    <Text style={styles.insightTitle}>{item.title}</Text>
+                  </View>
+                  <View style={styles.confidenceWrap}>
+                    <Text style={styles.confidence}>
+                      {Math.round(item.confidence * 100)}%
+                    </Text>
+                    <Text style={styles.confidenceLabel}>conf.</Text>
+                  </View>
+                </View>
+                <Text style={styles.insightBody}>{item.body}</Text>
+              </Card>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -169,17 +251,9 @@ function MiniStat({
   );
 }
 
-const DESCRIPTIONS: Record<string, string> = {
-  hrv: "Heart rate variability reflects nervous system balance. Higher = more recovered.",
-  sleep_hours: "Total time asleep. Consistency matters as much as quantity.",
-  resting_hr: "Morning resting heart rate trends down with fitness and recovery.",
-  readiness: "Composite score combining recovery, sleep, and stress — your daily green/yellow/red.",
-  load_score: "Relative training load vs. your baseline. Extremes in either direction cost readiness.",
-};
-
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
-  container: { padding: spacing.l, gap: spacing.m, paddingBottom: spacing.xxl * 2 },
+  container: { padding: spacing.l, gap: spacing.m, paddingBottom: layout.tabBarBottomSpace },
   header: { marginTop: spacing.s },
   kicker: {
     color: palette.accentDeep,
@@ -193,10 +267,11 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     marginTop: spacing.s,
     letterSpacing: -0.5,
+    lineHeight: 38,
   },
-  sub: { color: palette.textMuted, fontSize: 14, marginTop: spacing.xs },
+  sub: { color: palette.textMuted, fontSize: 14, marginTop: spacing.xs, lineHeight: 20 },
   chipRow: { gap: spacing.s, paddingVertical: spacing.s, paddingRight: spacing.l },
-  headerRow: {
+  trendHeader: {
     flexDirection: "row",
     alignItems: "flex-start",
     marginBottom: spacing.m,
@@ -231,14 +306,6 @@ const styles = StyleSheet.create({
   },
   baselineText: { color: palette.textMuted, fontSize: 12, fontWeight: "600" },
   loadingText: { color: palette.textMuted, fontSize: 12 },
-  tipKicker: {
-    color: palette.accentDeep,
-    fontSize: 10,
-    letterSpacing: 1.8,
-    fontWeight: "800",
-    marginBottom: spacing.xs,
-  },
-  tipBody: { color: palette.text, fontSize: 14, lineHeight: 21 },
   statRow: { flexDirection: "row", gap: spacing.s },
   miniStat: {
     flex: 1,
@@ -249,4 +316,57 @@ const styles = StyleSheet.create({
   },
   miniStatLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.2 },
   miniStatValue: { color: palette.text, fontSize: 18, fontWeight: "800" },
+  tipKicker: {
+    color: palette.accentDeep,
+    fontSize: 10,
+    letterSpacing: 1.8,
+    fontWeight: "800",
+    marginBottom: spacing.xs,
+  },
+  tipBody: { color: palette.text, fontSize: 14, lineHeight: 21 },
+
+  divider: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.m,
+    marginTop: spacing.l,
+    marginBottom: spacing.xs,
+  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: palette.border },
+  dividerText: {
+    color: palette.textSoft,
+    fontSize: 10,
+    letterSpacing: 1.8,
+    fontWeight: "800",
+  },
+
+  insightList: { gap: spacing.s },
+  insightItem: { gap: spacing.s },
+  insightTop: { flexDirection: "row", alignItems: "center", gap: spacing.m },
+  insightGlyphWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  insightGlyph: { fontSize: 18, fontWeight: "900" },
+  insightKind: { fontSize: 10, letterSpacing: 1.5, fontWeight: "800" },
+  insightTitle: {
+    color: palette.text,
+    fontSize: 15,
+    fontWeight: "700",
+    marginTop: 2,
+    lineHeight: 19,
+  },
+  confidenceWrap: {
+    alignItems: "center",
+    paddingHorizontal: spacing.m,
+    paddingVertical: 4,
+    borderRadius: radii.m,
+    backgroundColor: palette.surfaceAlt,
+  },
+  confidence: { color: palette.text, fontSize: 13, fontWeight: "800" },
+  confidenceLabel: { color: palette.textSoft, fontSize: 9, fontWeight: "700", letterSpacing: 0.5 },
+  insightBody: { color: palette.textMuted, fontSize: 13, lineHeight: 19 },
 });

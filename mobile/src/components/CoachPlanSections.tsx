@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import { Card } from "@/components/Card";
 import { palette, radii, spacing } from "@/theme";
@@ -86,39 +85,20 @@ function Section({
 }
 
 function SupportingRecCard({ rec }: { rec: CoachRec }) {
-  const [expanded, setExpanded] = useState(false);
   const tone = PRIORITY_TONE[rec.priority];
   return (
-    <Pressable onPress={() => setExpanded((v) => !v)}>
-      <Card style={styles.recCard}>
-        <View style={styles.recHeader}>
-          <View style={[styles.priorityPill, { backgroundColor: tone.bg }]}>
-            <Text style={[styles.priorityText, { color: tone.fg }]}>
-              {rec.priority.toUpperCase()}
-            </Text>
-          </View>
-          <Text style={styles.recDomain}>
-            {rec.domain.replace(/_/g, " ").toUpperCase()}
+    <Card style={styles.recCard}>
+      <View style={styles.recRow}>
+        <View style={[styles.priorityPill, { backgroundColor: tone.bg }]}>
+          <Text style={[styles.priorityText, { color: tone.fg }]}>
+            {rec.priority.toUpperCase()}
           </Text>
-          {rec.time_sensitive && rec.time_window ? (
-            <Text style={styles.timeWindow}>⏱ {rec.time_window}</Text>
-          ) : null}
         </View>
-        <Text style={styles.recHeadline}>{rec.headline}</Text>
-        <Text style={styles.recAction}>{rec.action}</Text>
-        {expanded ? (
-          <>
-            <View style={styles.recDivider} />
-            <Text style={styles.recWhyKicker}>WHY</Text>
-            <Text style={styles.recWhy}>{rec.why}</Text>
-            <Text style={styles.recEvidence}>📚 {rec.evidence}</Text>
-            <Text style={styles.recImpact}>Expected: {rec.expected_impact}</Text>
-          </>
-        ) : (
-          <Text style={styles.recTapHint}>Tap for evidence + reasoning</Text>
-        )}
-      </Card>
-    </Pressable>
+        <Text style={styles.recHeadline} numberOfLines={2}>
+          {rec.headline}
+        </Text>
+      </View>
+    </Card>
   );
 }
 
@@ -179,6 +159,11 @@ const styles = StyleSheet.create({
   },
 
   recCard: { gap: spacing.xs },
+  recRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.s,
+  },
   recHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -216,29 +201,9 @@ const styles = StyleSheet.create({
     backgroundColor: palette.borderSoft,
     marginVertical: spacing.s,
   },
-  recWhyKicker: {
-    color: palette.textSoft,
-    fontSize: 9,
-    letterSpacing: 1.3,
-    fontWeight: "800",
-  },
-  recWhy: { color: palette.text, fontSize: 13, lineHeight: 19 },
-  recEvidence: {
-    color: palette.textSoft,
-    fontSize: 11,
-    fontStyle: "italic",
-    marginTop: 4,
-  },
   recImpact: {
     color: palette.accentDeep,
     fontSize: 11,
     fontWeight: "700",
-    marginTop: 2,
-  },
-  recTapHint: {
-    color: palette.textSoft,
-    fontSize: 10,
-    fontStyle: "italic",
-    marginTop: 4,
   },
 });

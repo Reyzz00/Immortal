@@ -12,10 +12,7 @@ import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { CoachPlanSections } from "@/components/CoachPlanSections";
 import { CoachPriorityCard } from "@/components/CoachPriorityCard";
-import { HealthSyncCard } from "@/components/HealthSyncCard";
-import { RecoveryChamber } from "@/components/RecoveryChamber";
 import { ScoreRing } from "@/components/ScoreRing";
-import { useProfileStore } from "@/state/profileStore";
 import { layout, palette, radii, shadow, spacing } from "@/theme";
 
 const readinessLabel = (score: number) => {
@@ -39,9 +36,6 @@ export function DashboardScreen() {
   const { data: coachStatus } = useCoachStatus();
   const coachEnabled = coachStatus?.configured ?? false;
   const coach = useCoachPlan(coachEnabled);
-  const profile = useProfileStore((s) => s.profile);
-  const sources = useProfileStore((s) => s.sources);
-  const connectedCount = Object.values(sources).filter((s) => s.connected).length;
 
   if (isLoading) {
     return <Loading text="Crunching today's state…" />;
@@ -60,15 +54,6 @@ export function DashboardScreen() {
   return (
     <SafeAreaView edges={["top"]} style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={styles.greetingBlock}>
-          <Text style={styles.greeting}>
-            Welcome back{profile.firstName ? `, ${profile.firstName}` : ""}
-          </Text>
-          <Text style={styles.greetingSub}>
-            {connectedCount} source{connectedCount === 1 ? "" : "s"} connected
-          </Text>
-        </View>
-
         <View style={styles.pageHeader}>
           <Text style={styles.kicker}>TODAY · {state.date}</Text>
           <Text style={styles.pageTitle}>Today's plan</Text>
@@ -195,24 +180,9 @@ export function DashboardScreen() {
           />
         </View>
 
-        <Card tone="ink" style={styles.chamberCard}>
-          <RecoveryChamber state={state} />
-        </Card>
-
         {plan ? <CoachPlanSections plan={plan} /> : null}
 
-        <HealthSyncCard />
-
-        {state.anomalies.length ? (
-          <Card tone="coral" style={styles.anomalyCard}>
-            <Text style={styles.anomalyTitle}>⚠  Anomalies detected</Text>
-            {state.anomalies.map((a) => (
-              <Text key={a} style={styles.anomaly}>
-                · {a.replace(/_/g, " ")}
-              </Text>
-            ))}
-          </Card>
-        ) : null}
+        {state.anomalies.length ? <AnomalyBanner anomalies={state.anomalies} /> : null}
 
         <Text style={styles.footer}>Immortal · build {state.date}</Text>
       </ScrollView>
@@ -314,14 +284,49 @@ function Loading({ text }: { text: string }) {
   );
 }
 
+const ANOMALY_TONES = [
+  palette.coral,
+  palette.peach,
+  palette.lavender,
+  palette.sage,
+  palette.sky,
+];
+
+function prettyAnomaly(name: string): string {
+  const cleaned = name.replace(/_/g, " ").trim();
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+}
+
+function AnomalyBanner({ anomalies }: { anomalies: string[] }) {
+  return (
+    <View style={styles.anomalyWrap}>
+      <Text style={styles.anomalyKicker}>SIGNAL</Text>
+      <Text style={styles.anomalyHeadline}>
+        {anomalies.length === 1
+          ? "1 anomaly detected"
+          : `${anomalies.length} anomalies detected`}
+      </Text>
+      <View style={styles.anomalyChipRow}>
+        {anomalies.map((a, i) => (
+          <View
+            key={a}
+            style={[
+              styles.anomalyChip,
+              { backgroundColor: ANOMALY_TONES[i % ANOMALY_TONES.length] },
+            ]}
+          >
+            <Text style={styles.anomalyChipText}>{prettyAnomaly(a)}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.xl },
   container: { padding: spacing.l, gap: spacing.m, paddingBottom: layout.tabBarBottomSpace },
-
-  greetingBlock: { gap: 2 },
-  greeting: { color: palette.text, fontSize: 15, fontWeight: "800" },
-  greetingSub: { color: palette.textMuted, fontSize: 12 },
 
   pageHeader: {
     marginTop: spacing.s,
@@ -443,6 +448,43 @@ const styles = StyleSheet.create({
     marginTop: spacing.m,
   },
 
+  anomalyWrap: {
+    backgroundColor: palette.ink,
+    borderRadius: radii.l,
+    padding: spacing.l,
+    gap: spacing.s,
+    ...shadow.floating,
+  },
+  anomalyKicker: {
+    color: palette.accent,
+    fontSize: 10,
+    letterSpacing: 1.8,
+    fontWeight: "800",
+  },
+  anomalyHeadline: {
+    color: palette.bgAlt,
+    fontSize: 22,
+    fontWeight: "800",
+    letterSpacing: -0.3,
+    marginBottom: spacing.xs,
+  },
+  anomalyChipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.s,
+  },
+  anomalyChip: {
+    paddingHorizontal: spacing.m,
+    paddingVertical: 8,
+    borderRadius: radii.pill,
+  },
+  anomalyChipText: {
+    color: palette.ink,
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 0.2,
+  },
+
   gridRow: {
     flexDirection: "row",
     gap: spacing.m,
@@ -478,15 +520,6 @@ const styles = StyleSheet.create({
   tileValueRow: { flexDirection: "row", alignItems: "baseline", gap: 4 },
   tileValue: { color: palette.text, fontSize: 26, fontWeight: "800", letterSpacing: -0.5 },
   tileUnit: { color: palette.textMuted, fontSize: 12, fontWeight: "600" },
-
-  chamberCard: {
-    padding: spacing.l,
-    gap: spacing.m,
-  },
-
-  anomalyCard: { gap: 4 },
-  anomalyTitle: { color: palette.text, fontSize: 14, fontWeight: "800" },
-  anomaly: { color: palette.text, fontSize: 13, opacity: 0.85 },
 
   footer: {
     color: palette.textSoft,

@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_name: str = "Longevity OS"
+    app_name: str = "Immortal"
     database_url: str = f"sqlite:///{Path(__file__).resolve().parent.parent.parent}/longevity.db"
     demo_user_id: int = 1
     google_api_key: str | None = None

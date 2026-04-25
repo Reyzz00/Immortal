@@ -8,17 +8,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CheckinScreen } from "@/screens/CheckinScreen";
 import { DashboardScreen } from "@/screens/DashboardScreen";
 import { ExperimentsScreen } from "@/screens/ExperimentsScreen";
-import { InsightsScreen } from "@/screens/InsightsScreen";
-import { TrendsScreen } from "@/screens/TrendsScreen";
-import { palette, shadow, spacing } from "@/theme";
+import { PulseScreen } from "@/screens/PulseScreen";
+import { palette, radii, shadow, spacing } from "@/theme";
 
 const Tab = createBottomTabNavigator();
 
 const ICONS: Record<string, string> = {
   Today: "◉",
-  Insights: "✦",
+  Pulse: "∿",
   "Check-in": "✎",
-  Trends: "∿",
   Experiments: "△",
 };
 
@@ -27,13 +25,14 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   return (
     <View
       pointerEvents="box-none"
-      style={[styles.barWrap, { paddingBottom: Math.max(insets.bottom, spacing.l) }]}
+      style={[styles.barWrap, { paddingBottom: Math.max(insets.bottom, spacing.m) }]}
     >
       <View style={styles.bar}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
           const focused = state.index === index;
-          const label = (options.tabBarLabel as string) ?? options.title ?? route.name;
+          const label =
+            (options.tabBarLabel as string) ?? options.title ?? route.name;
           const glyph = ICONS[route.name] ?? "•";
 
           const onPress = () => {
@@ -43,7 +42,11 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               canPreventDefault: true,
             });
             if (!focused && !event.defaultPrevented) {
-              navigation.navigate(route.name as never, route.params as never);
+              (
+                navigation as unknown as {
+                  navigate: (n: string, p?: object) => void;
+                }
+              ).navigate(route.name, route.params);
             }
           };
 
@@ -60,12 +63,20 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               onPress={onPress}
               onLongPress={onLongPress}
               style={({ pressed }) => [
-                styles.pill,
-                focused && styles.pillActive,
-                pressed && { transform: [{ scale: 0.94 }] },
+                styles.tab,
+                focused && styles.tabActive,
+                pressed && { opacity: 0.7 },
               ]}
             >
-              <Text style={[styles.glyph, focused && styles.glyphActive]}>{glyph}</Text>
+              <Text style={[styles.glyph, focused && styles.glyphActive]}>
+                {glyph}
+              </Text>
+              <Text
+                numberOfLines={1}
+                style={[styles.label, focused && styles.labelActive]}
+              >
+                {label}
+              </Text>
             </Pressable>
           );
         })}
@@ -77,7 +88,7 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 export function RootTabs() {
   return (
     <Tab.Navigator
-      initialRouteName="Check-in"
+      initialRouteName="Today"
       tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{ headerShown: false, tabBarShowLabel: false }}
     >
@@ -87,19 +98,14 @@ export function RootTabs() {
         options={{ title: "Today" }}
       />
       <Tab.Screen
-        name="Insights"
-        component={InsightsScreen}
-        options={{ title: "Insights" }}
+        name="Pulse"
+        component={PulseScreen}
+        options={{ title: "Pulse" }}
       />
       <Tab.Screen
         name="Check-in"
         component={CheckinScreen}
         options={{ title: "Check-in" }}
-      />
-      <Tab.Screen
-        name="Trends"
-        component={TrendsScreen}
-        options={{ title: "Trends" }}
       />
       <Tab.Screen
         name="Experiments"
@@ -110,8 +116,6 @@ export function RootTabs() {
   );
 }
 
-const PILL_SIZE = 44;
-
 const styles = StyleSheet.create({
   barWrap: {
     position: "absolute",
@@ -120,33 +124,50 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: "center",
     paddingTop: spacing.s,
+    paddingHorizontal: spacing.m,
   },
   bar: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.s,
-    paddingHorizontal: spacing.s,
-  },
-  pill: {
-    width: PILL_SIZE,
-    height: PILL_SIZE,
-    borderRadius: PILL_SIZE / 2,
-    backgroundColor: palette.surface,
-    alignItems: "center",
-    justifyContent: "center",
-    ...shadow.card,
-  },
-  pillActive: {
-    backgroundColor: palette.accent,
+    alignItems: "stretch",
+    justifyContent: "space-between",
+    backgroundColor: palette.ink,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xs,
+    minWidth: 320,
     ...shadow.floating,
+  },
+  tab: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: spacing.s,
+    paddingHorizontal: spacing.xs,
+    borderRadius: radii.pill,
+    gap: 2,
+  },
+  tabActive: {
+    backgroundColor: palette.accent,
   },
   glyph: {
     fontSize: 16,
     fontWeight: "800",
-    color: palette.textMuted,
+    color: palette.surface,
+    opacity: 0.78,
   },
   glyphActive: {
     color: palette.ink,
+    opacity: 1,
+  },
+  label: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: palette.surface,
+    opacity: 0.66,
+    letterSpacing: 0.3,
+  },
+  labelActive: {
+    color: palette.ink,
+    opacity: 1,
   },
 });

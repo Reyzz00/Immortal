@@ -1,4 +1,4 @@
-# Longevity OS
+# Immortal
 
 A closed-loop personal-health intelligence system. Ingests wearable data, learns
 your baselines, flags anomalies, recommends actions, adapts its own questions,
