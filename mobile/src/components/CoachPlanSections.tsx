@@ -34,33 +34,10 @@ export function CoachPlanSections({ plan }: { plan: CoachPlan }) {
         </Card>
       ) : null}
 
-      {plan.tonight_checklist.length > 0 ? (
-        <Card tone="lavender" style={styles.block}>
-          <Text style={styles.blockKicker}>TONIGHT</Text>
-          {plan.tonight_checklist.map((item, i) => (
-            <View key={i} style={styles.bullet}>
-              <Text style={styles.bulletGlyphBox}>▢</Text>
-              <Text style={styles.bulletText}>{item}</Text>
-            </View>
-          ))}
-        </Card>
-      ) : null}
-
       {plan.tomorrow_preview ? (
         <Card tone="peach" style={styles.block}>
           <Text style={styles.blockKicker}>TOMORROW</Text>
           <Text style={styles.previewText}>{plan.tomorrow_preview}</Text>
-        </Card>
-      ) : null}
-
-      {plan.data_gaps.length > 0 ? (
-        <Card tone="sunken" style={styles.block}>
-          <Text style={styles.blockKicker}>SHARPEN WITH</Text>
-          {plan.data_gaps.map((d, i) => (
-            <Text key={i} style={styles.gapText}>
-              · {d}
-            </Text>
-          ))}
         </Card>
       ) : null}
 

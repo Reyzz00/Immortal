@@ -138,7 +138,7 @@ export function CheckinScreen() {
             {current.reason !== "baseline" ? (
               <View style={styles.reasonPill}>
                 <View style={styles.reasonDot} />
-                <Text style={styles.reasonText}>
+                <Text style={styles.reasonText} numberOfLines={1}>
                   {current.reason.replace(/_/g, " ")}
                 </Text>
               </View>
@@ -316,6 +316,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    gap: spacing.s,
   },
   qIndex: {
     paddingHorizontal: spacing.m,
@@ -325,6 +326,7 @@ const styles = StyleSheet.create({
   },
   qIndexText: { color: palette.accent, fontSize: 11, fontWeight: "900", letterSpacing: 0.5 },
   reasonPill: {
+    flexShrink: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
@@ -334,7 +336,13 @@ const styles = StyleSheet.create({
     backgroundColor: palette.peachSoft,
   },
   reasonDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: palette.accent },
-  reasonText: { color: palette.accentDeep, fontSize: 10, fontWeight: "800", letterSpacing: 0.5 },
+  reasonText: {
+    flexShrink: 1,
+    color: palette.accentDeep,
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
   prompt: {
     color: palette.text,
     fontSize: 26,
@@ -350,9 +358,10 @@ const styles = StyleSheet.create({
     marginBottom: spacing.s,
   },
   scaleEnd: { color: palette.textSoft, fontSize: 11, fontWeight: "700", letterSpacing: 1 },
-  scale: { flexDirection: "row", justifyContent: "space-between" },
+  scale: { flexDirection: "row", gap: 4 },
   scaleBtn: {
-    width: 26,
+    flex: 1,
+    minWidth: 0,
     height: 44,
     borderRadius: 13,
     backgroundColor: palette.surfaceAlt,
